@@ -16,16 +16,42 @@
     <Filter Include="3rdparty">
       <UniqueIdentifier>{96bcb7ae-3c3d-456f-a0ce-7fd1406239d1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="3rdparty\src">
-      <UniqueIdentifier>{3f89332d-4dfd-4854-8e17-d1efb1646c9d}</UniqueIdentifier>
+    <Filter Include="3rdparty\lodepng">
+      <UniqueIdentifier>{c79a6fab-7117-45d7-b41d-b0b7b587b9b8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="3rdparty\header">
-      <UniqueIdentifier>{349fe1fd-84ab-4752-92c2-9e269d33266d}</UniqueIdentifier>
+    <Filter Include="3rdparty\simple-dds-image-reader">
+      <UniqueIdentifier>{3e39e52b-7ac1-4683-ba10-8c88814bc952}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="anim2factorio.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\lodepng\lodepng.cpp">
+      <Filter>3rdparty\lodepng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\simple-dds-image-reader\ddsreader.cpp">
+      <Filter>3rdparty\simple-dds-image-reader</Filter>
+    </ClCompile>
+    <ClCompile Include="convert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="anim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\lodepng\lodepng.h">
+      <Filter>3rdparty\lodepng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\simple-dds-image-reader\ddsreader.hpp">
+      <Filter>3rdparty\simple-dds-image-reader</Filter>
+    </ClInclude>
+    <ClInclude Include="convert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="anim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -135,7 +135,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="anim2factorio.cpp" />
+    <ClCompile Include="..\lodepng\lodepng.cpp" />
+    <ClCompile Include="..\simple-dds-image-reader\ddsreader.cpp" />
+    <ClCompile Include="anim.cpp" />
+    <ClCompile Include="convert.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\lodepng\lodepng.h" />
+    <ClInclude Include="..\simple-dds-image-reader\ddsreader.hpp" />
+    <ClInclude Include="anim.h" />
+    <ClInclude Include="convert.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
