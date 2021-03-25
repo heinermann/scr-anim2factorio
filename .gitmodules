@@ -1,0 +1,9 @@
+[submodule "simple-dds-image-reader"]
+	path = simple-dds-image-reader
+	url = https://github.com/juho-p/simple-dds-image-reader.git
+[submodule "lodepng"]
+	path = lodepng
+	url = https://github.com/lvandeve/lodepng.git
+[submodule "cxxopts"]
+	path = cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
