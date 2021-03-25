@@ -70,8 +70,6 @@ typedef struct {
   std::uint32_t frames;
   std::uint32_t width;      // grp width
   std::uint32_t height;     // grp height
-  float scWidth;  // 1/texWidth
-  float scHeight; // 1/twxHeight
 
   std::map<std::string, dds_img_t> data;
 

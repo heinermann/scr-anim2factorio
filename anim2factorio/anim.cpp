@@ -18,6 +18,8 @@ std::istream& read(std::istream& is, T& data) {
 }
 
 anim loadAnim(std::istream& is) {
+  static std::vector<std::uint8_t> dds_work_buffer;
+
   if (!is.binary) throw std::invalid_argument("Input stream must be binary");
 
   anim result;
@@ -40,9 +42,6 @@ anim loadAnim(std::istream& is) {
   std::uint16_t texw = entry.imgs[0].texWidth;
   std::uint16_t texh = entry.imgs[0].texHeight;
 
-  result.scWidth = 1.0f / texw;
-  result.scHeight = 1.0f / texh;
-
   // Load DDS files
   for (int i = 0; i < header.layers; ++i) {
     anim_img& img = entry.imgs[i];
@@ -54,11 +53,14 @@ anim loadAnim(std::istream& is) {
 
     TEST(is.seekg(img.ptr));
 
-    std::vector<std::uint8_t> data(img.size);
-    TEST(is.read(reinterpret_cast<char*>(data.data()), data.size()));
+    dds_work_buffer.clear();
+    dds_work_buffer.resize(img.size);
+    TEST(is.read(reinterpret_cast<char*>(dds_work_buffer.data()), dds_work_buffer.size()));
 
-    Image dds = read_dds(data);
-    dds_img_t dds2{ dds.data, dds.width, dds.height, dds.bpp };
+    Image dds = read_dds(dds_work_buffer);
+    dds_img_t dds2{ {}, dds.width, dds.height, dds.bpp };
+    dds2.data.swap(dds.data); // avoid copy
+
     result.data.emplace(header.layernames[i], dds2);
   }
 
