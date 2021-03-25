@@ -35,7 +35,6 @@ anim loadAnim(std::istream& is) {
   TEST(read(is, entry));
   TEST(entry.frames > 0);
 
-  result.frames = entry.frames;
   result.width = entry.grpWidth;
   result.height = entry.grpHeight;
 
@@ -65,6 +64,7 @@ anim loadAnim(std::istream& is) {
   }
 
   // Load frame data
+  result.framedata.reserve(entry.frames);
   TEST(is.seekg(entry.frameptr));
   for (int i = 0; i < entry.frames; ++i) {
     frame frameentry;

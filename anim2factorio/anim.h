@@ -67,7 +67,6 @@ typedef struct {
 #define ANIM_TEX_COUNT 2
 
 typedef struct {
-  std::uint32_t frames;
   std::uint32_t width;      // grp width
   std::uint32_t height;     // grp height
 
