@@ -168,18 +168,18 @@ void convert(const std::string& input, const std::string& output_dir) {
     << "  name = \"starcraft_" << input_stem << "\",\n"
     << "  layers = {\n";
   
-  auto diffuse_lua = get_layer_strings(input_stem + "_diffuse.lua", result_info);
+  auto diffuse_lua = get_layer_strings(input_stem + "_diffuse.png", result_info);
   lua << layer_to_lua_string(diffuse_lua);
   
   if (has_teamcolor) {
-    auto teamcolor_lua = get_layer_strings(input_stem + "_teamcolor.lua", result_info);
+    auto teamcolor_lua = get_layer_strings(input_stem + "_teamcolor.png", result_info);
     teamcolor_lua.push_back("apply_runtime_tint = true");
     
     lua << ",\n" << layer_to_lua_string(teamcolor_lua);
   }
 
   if (has_light) {
-    auto light_lua = get_layer_strings(input_stem + "_emissive.lua", result_info);
+    auto light_lua = get_layer_strings(input_stem + "_emissive.png", result_info);
     light_lua.emplace_back("flags = {\"light\"}");
     light_lua.emplace_back("draw_as_light = true");
     
