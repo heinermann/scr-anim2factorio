@@ -43,7 +43,9 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
   // Get compacted grp width/height to reduce image size
   std::uint16_t grpWidth = 0;
   std::uint16_t grpHeight = 0;
-  for (int i = 0; i < anim_parent.framedata.size(); ++i) {
+  int framecount = int(anim_parent.framedata.size());
+
+  for (int i = 0; i < framecount; ++i) {
     const frame& f = anim_parent.framedata[i];
     grpWidth = std::max(grpWidth, f.width);
     grpHeight = std::max(grpHeight, f.height);
@@ -54,12 +56,12 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
   // Compute target cells per row
   int targetCellsPerRow = 2048 / grpWidth;  // something something graphics card texture width limitation for Factorio?
 
-  int newImgWidth = targetCellsPerRow * grpWidth;
-  int newImgHeight = int(std::ceil(double(anim_parent.framedata.size()) / targetCellsPerRow)) * grpHeight;
+  int newImgWidth = std::min(targetCellsPerRow * grpWidth, framecount * grpWidth);
+  int newImgHeight = int(std::ceil(double(framecount) / targetCellsPerRow)) * grpHeight;
   std::size_t imgDataSize = 4 * newImgWidth * newImgHeight;
   std::vector<std::uint8_t> newImg(imgDataSize, 0);
 
-  for (int i = 0; i < anim_parent.framedata.size(); ++i) {
+  for (int i = 0; i < framecount; ++i) {
     const frame& f = anim_parent.framedata[i];
     int srcx = f.x;
     int srcy = f.y;
@@ -77,7 +79,7 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
     img_info->frame_width = grpWidth;
     img_info->frame_height = grpHeight;
     img_info->line_length = targetCellsPerRow;
-    img_info->frame_count = int(anim_parent.framedata.size());
+    img_info->frame_count = framecount;
   }
 }
 
