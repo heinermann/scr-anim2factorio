@@ -39,6 +39,9 @@
     <ClCompile Include="anim.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="image_predefs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\lodepng\lodepng.h">
@@ -51,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="anim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="image_predefs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

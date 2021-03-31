@@ -10,14 +10,18 @@
 #include <vector>
 
 #include "anim.h"
+#include "image_predefs.h"
 
 #include "../lodepng/lodepng.h"
+
+// TODO: Starport and Factory overlays may not be correct
 
 struct gfx_info_t {
   int frame_width;
   int frame_height;
   int line_length;
   int frame_count;
+  int img_id;
 };
 
 void swapRGB(dds_img_t& img) {
@@ -83,7 +87,7 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
   }
 }
 
-void convert_img(anim& anim_data, const std::string& layer, gfx_info_t* result_info = nullptr) {
+void convert_img(anim& anim_data, const std::string& layer, bool gfxturns, gfx_info_t* result_info = nullptr) {
   swapRGB(anim_data.data.at(layer));
   toSpritesheet(anim_data, anim_data.data.at(layer), result_info);
 }
@@ -121,13 +125,21 @@ std::string layer_to_lua_string(std::vector<std::string> layer) {
 }
 
 std::vector<std::string> get_layer_strings(const std::string& graphic_file, const gfx_info_t& info) {
-  return std::vector<std::string> {
+  std::vector<std::string> result = {
     "filename = \"__starcraft__/graphics/" + graphic_file + "\"",
     "size = { " + std::to_string(info.frame_width) + ", " + std::to_string(info.frame_height) + " }",
     "line_length = " + std::to_string(info.line_length),
     "frame_count = " + std::to_string(info.frame_count),
     "scale = 0.5"
   };
+
+  if (image_predefs[info.img_id].draw_as_glow)
+    result.emplace_back("draw_as_glow = true");
+
+  if (image_predefs[info.img_id].draw_as_shadow)
+    result.emplace_back("draw_as_shadow = true");
+
+  return result;
 }
 
 void convert(const std::string& input, const std::string& output_dir) {
@@ -147,17 +159,24 @@ void convert(const std::string& input, const std::string& output_dir) {
   
   // Convert and write images
   gfx_info_t result_info;
-  convert_img(anim_data, "diffuse", &result_info);
+  result_info.img_id = 995; // just a random id that has everything set to false
+  bool gfxturns = false;
+  if (size_t pos = input_stem.find("_"); pos != std::string::npos) {
+    result_info.img_id = std::stoi(input_stem.substr(pos + 1));
+    gfxturns = image_predefs[result_info.img_id].gfx_turns;
+  }
+
+  convert_img(anim_data, "diffuse", gfxturns, &result_info);
   write_png(out_file_prefix + "_diffuse.png", anim_data, "diffuse");
 
   if (has_teamcolor) {
-    convert_img(anim_data, "teamcolor");
+    convert_img(anim_data, "teamcolor", gfxturns);
     apply_mask(anim_data.data.at("diffuse"), anim_data.data.at("teamcolor"));
     write_png(out_file_prefix + "_teamcolor.png", anim_data, "teamcolor");
   }
 
   if (has_light) {
-    convert_img(anim_data, "emissive");
+    convert_img(anim_data, "emissive", gfxturns);
     write_png(out_file_prefix + "_emissive.png", anim_data, "emissive");
   }
 
