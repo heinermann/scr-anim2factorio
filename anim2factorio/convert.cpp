@@ -36,9 +36,22 @@ void bitBlit32(const std::vector<std::uint8_t>& src, int srcx, int srcy, int src
       int dstpos = (y + dsty) * dstrunbytes + (x + dstx) * 4;
       int srcpos = (y + srcy) * srcrunbytes + (x + srcx) * 4;
       dst[dstpos] = src[srcpos];
-      dst[dstpos+1] = src[srcpos+1];
-      dst[dstpos+2] = src[srcpos+2];
-      dst[dstpos+3] = src[srcpos+3];
+      dst[dstpos + 1] = src[srcpos + 1];
+      dst[dstpos + 2] = src[srcpos + 2];
+      dst[dstpos + 3] = src[srcpos + 3];
+    }
+  }
+}
+
+void bitBlit32_flipped(const std::vector<std::uint8_t>& src, int srcx, int srcy, int srcwidth, int srcheight, int srcrunbytes, std::vector<std::uint8_t>& dst, int dstx, int dsty, int dstrunbytes) {
+  for (int y = 0; y < srcheight; ++y) {
+    for (int x = 0; x < srcwidth; ++x) {
+      int dstpos = (y + dsty) * dstrunbytes + (x + dstx) * 4;
+      int srcpos = (y + srcy) * srcrunbytes + (srcwidth - 1 - x + srcx) * 4;
+      dst[dstpos] = src[srcpos];
+      dst[dstpos + 1] = src[srcpos + 1];
+      dst[dstpos + 2] = src[srcpos + 2];
+      dst[dstpos + 3] = src[srcpos + 3];
     }
   }
 }
@@ -87,7 +100,7 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
   }
 }
 
-void img_to_gfx_turns_order(dds_img_t& img, gfx_info_t* info) {
+void img_to_gfx_turns_sheet(dds_img_t& img, gfx_info_t* info) {
   int num_frames_without_turns = info->frame_count / 17;
   int num_remaining_frames = info->frame_count % 17;
 
@@ -95,9 +108,12 @@ void img_to_gfx_turns_order(dds_img_t& img, gfx_info_t* info) {
   int num_extra_rows = int(std::ceil(double(num_remaining_frames) / info->line_length));
   
   int new_line_len = std::min(info->line_length, num_frames_without_turns);
-  int new_width = new_line_len * info->frame_width;
-  int new_height = (num_rows_per_turn * 17 + num_extra_rows) * info->frame_height;
+  // Factorio bug where smaller-width textures on characters will fail to load because it tries to load mysterious 2x4-sized sprites
+  int new_width = std::max(new_line_len * info->frame_width, 2048);
+  int new_height = (num_rows_per_turn * 34 + num_extra_rows) * info->frame_height;
   std::vector<std::uint8_t> new_img(new_width * new_height * 4);
+
+  // Copy normal frames
   for (int i = 0; i < num_frames_without_turns; ++i) {
     for (int turn = 0; turn < 17; ++turn) {
       int srcx = ((i*17 + turn) % info->line_length) * info->frame_width;
@@ -108,8 +124,20 @@ void img_to_gfx_turns_order(dds_img_t& img, gfx_info_t* info) {
 
       bitBlit32(img.data, srcx, srcy, info->frame_width, info->frame_height, img.width * 4, new_img, dstx, dsty, new_width * 4);
     }
+    // Flip frame
+    for (int turn = 0; turn < 17; ++turn) {
+      int srcx = ((i * 17 + turn) % info->line_length) * info->frame_width;
+      int srcy = ((i * 17 + turn) / info->line_length) * info->frame_height;
+
+      int dstx = (i % new_line_len) * info->frame_width;
+      int dsty = ((34 - 1 - turn) * num_rows_per_turn + i / new_line_len) * info->frame_height;
+
+      bitBlit32_flipped(img.data, srcx, srcy, info->frame_width, info->frame_height, img.width * 4, new_img, dstx, dsty, new_width * 4);
+    }
   }
-  int extra_frames_start = num_frames_without_turns * 17;
+
+  // Copy extra frames
+  int extra_frames_start = num_frames_without_turns * 34;
   for (int i = extra_frames_start; i < info->frame_count; ++i) {
     int srcx = (i % info->line_length) * info->frame_width;
     int srcy = (i / info->line_length) * info->frame_height;
@@ -134,7 +162,7 @@ void convert_img(anim& anim_data, const std::string& layer, bool gfxturns, gfx_i
   swapRGB(anim_data.data.at(layer));
   toSpritesheet(anim_data, anim_data.data.at(layer), result_info);
   if (gfxturns)
-    img_to_gfx_turns_order(anim_data.data.at(layer), result_info);
+    img_to_gfx_turns_sheet(anim_data.data.at(layer), result_info);
 }
 
 bool has_layer(const anim& anim_data, const std::string& layer) {
@@ -185,8 +213,7 @@ std::vector<std::string> get_layer_strings(const std::string& graphic_file, cons
 
   if (image_predefs[info.img_id].gfx_turns) {
     result.push_back("frame_count = " + std::to_string(info.frame_count / 17));
-    result.emplace_back("direction_count = 17");
-    result.emplace_back("axially_symmetrical = true");
+    result.emplace_back("direction_count = 34");
     result.emplace_back("animation_speed = 1 / 2.52");
   }
   else {
