@@ -19,7 +19,7 @@
 struct gfx_info_t {
   int frame_width;
   int frame_height;
-  int line_length;
+  int line_length;  // number of frames per row
   int frame_count;
   int img_id;
 };
@@ -87,9 +87,54 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
   }
 }
 
+void img_to_gfx_turns_order(dds_img_t& img, gfx_info_t* info) {
+  int num_frames_without_turns = info->frame_count / 17;
+  int num_remaining_frames = info->frame_count % 17;
+
+  int num_rows_per_turn = int(std::ceil(double(num_frames_without_turns) / info->line_length));
+  int num_extra_rows = int(std::ceil(double(num_remaining_frames) / info->line_length));
+  
+  int new_line_len = std::min(info->line_length, num_frames_without_turns);
+  int new_width = new_line_len * info->frame_width;
+  int new_height = (num_rows_per_turn * 17 + num_extra_rows) * info->frame_height;
+  std::vector<std::uint8_t> new_img(new_width * new_height * 4);
+  for (int i = 0; i < num_frames_without_turns; ++i) {
+    for (int turn = 0; turn < 17; ++turn) {
+      int srcx = ((i*17 + turn) % info->line_length) * info->frame_width;
+      int srcy = ((i*17 + turn) / info->line_length) * info->frame_height;
+
+      int dstx = (i % new_line_len) * info->frame_width;
+      int dsty = (turn * num_rows_per_turn + i / new_line_len) * info->frame_height;
+
+      bitBlit32(img.data, srcx, srcy, info->frame_width, info->frame_height, img.width * 4, new_img, dstx, dsty, new_width * 4);
+    }
+  }
+  int extra_frames_start = num_frames_without_turns * 17;
+  for (int i = extra_frames_start; i < info->frame_count; ++i) {
+    int srcx = (i % info->line_length) * info->frame_width;
+    int srcy = (i / info->line_length) * info->frame_height;
+
+    int base_offset = i % extra_frames_start;
+    int dstx = (base_offset % new_line_len) * info->frame_width;
+    int dsty = (num_rows_per_turn * 17 + base_offset / new_line_len) * info->frame_height;
+
+    bitBlit32(img.data, srcx, srcy, info->frame_width, info->frame_height, img.width * 4, new_img, dstx, dsty, new_width * 4);
+  }
+  img.data.swap(new_img);
+  img.height = new_height;
+  img.width = new_width;
+  info->line_length = new_line_len;
+}
+
 void convert_img(anim& anim_data, const std::string& layer, bool gfxturns, gfx_info_t* result_info = nullptr) {
+  gfx_info_t supplement;
+  if (result_info == nullptr)
+    result_info = &supplement;
+    
   swapRGB(anim_data.data.at(layer));
   toSpritesheet(anim_data, anim_data.data.at(layer), result_info);
+  if (gfxturns)
+    img_to_gfx_turns_order(anim_data.data.at(layer), result_info);
 }
 
 bool has_layer(const anim& anim_data, const std::string& layer) {
@@ -129,7 +174,6 @@ std::vector<std::string> get_layer_strings(const std::string& graphic_file, cons
     "filename = \"__starcraft__/graphics/" + graphic_file + "\"",
     "size = { " + std::to_string(info.frame_width) + ", " + std::to_string(info.frame_height) + " }",
     "line_length = " + std::to_string(info.line_length),
-    "frame_count = " + std::to_string(info.frame_count),
     "scale = 0.5"
   };
 
@@ -138,6 +182,16 @@ std::vector<std::string> get_layer_strings(const std::string& graphic_file, cons
 
   if (image_predefs[info.img_id].draw_as_shadow)
     result.emplace_back("draw_as_shadow = true");
+
+  if (image_predefs[info.img_id].gfx_turns) {
+    result.push_back("frame_count = " + std::to_string(info.frame_count / 17));
+    result.emplace_back("direction_count = 17");
+    result.emplace_back("axially_symmetrical = true");
+    result.emplace_back("animation_speed = 1 / 2.52");
+  }
+  else {
+    result.push_back("frame_count = " + std::to_string(info.frame_count));
+  }
 
   return result;
 }
