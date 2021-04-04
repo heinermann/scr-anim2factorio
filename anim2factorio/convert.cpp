@@ -22,6 +22,8 @@ struct gfx_info_t {
   int line_length;  // number of frames per row
   int frame_count;
   int img_id;
+  int shift_x;
+  int shift_y;
 };
 
 void swapRGB(dds_img_t& img) {
@@ -57,21 +59,26 @@ void bitBlit32_flipped(const std::vector<std::uint8_t>& src, int srcx, int srcy,
 }
 
 void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info = nullptr) {
-  // Get compacted grp width/height to reduce image size
-  std::uint16_t grpWidth = 0;
-  std::uint16_t grpHeight = 0;
+  std::uint16_t grpWidth = std::uint16_t(anim_parent.width);
+  std::uint16_t grpHeight = std::uint16_t(anim_parent.height);
+  std::int16_t grpNegativeWidthExtra = 0, grpNegativeHeightExtra = 0;
   int framecount = int(anim_parent.framedata.size());
-
+  
+  // Fixup graphic for negative offsets
   for (int i = 0; i < framecount; ++i) {
     const frame& f = anim_parent.framedata[i];
-    grpWidth = std::max(grpWidth, f.width);
-    grpHeight = std::max(grpHeight, f.height);
+    grpWidth = std::max(grpWidth, std::uint16_t(f.xoffs + f.width));
+    grpHeight = std::max(grpHeight, std::uint16_t(f.yoffs + f.height));
+    grpNegativeWidthExtra = std::min(grpNegativeWidthExtra, f.xoffs);
+    grpNegativeHeightExtra = std::min(grpNegativeHeightExtra, f.yoffs);
   }
-  grpWidth += 2;
-  grpHeight += 2;
+  grpWidth -= grpNegativeWidthExtra;
+  grpHeight -= grpNegativeHeightExtra;
 
   // Compute target cells per row
   int targetCellsPerRow = 2048 / grpWidth;  // something something graphics card texture width limitation for Factorio?
+  if (img_info != nullptr && image_predefs[img_info->img_id].vertical_frames)
+    targetCellsPerRow = 1;
 
   int newImgWidth = std::min(targetCellsPerRow * grpWidth, framecount * grpWidth);
   int newImgHeight = int(std::ceil(double(framecount) / targetCellsPerRow)) * grpHeight;
@@ -83,8 +90,8 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
     int srcx = f.x;
     int srcy = f.y;
 
-    int dstx = (i % targetCellsPerRow) * grpWidth + (grpWidth - f.width)/2;
-    int dsty = (i / targetCellsPerRow) * grpHeight + (grpHeight - f.height)/2;
+    int dstx = (i % targetCellsPerRow) * grpWidth + f.xoffs - grpNegativeWidthExtra;
+    int dsty = (i / targetCellsPerRow) * grpHeight + f.yoffs - grpNegativeHeightExtra;
 
     bitBlit32(img.data, srcx, srcy, f.width, f.height, img.width * 4, newImg, dstx, dsty, newImgWidth * 4);
   }
@@ -97,6 +104,8 @@ void toSpritesheet(const anim& anim_parent, dds_img_t& img, gfx_info_t* img_info
     img_info->frame_height = grpHeight;
     img_info->line_length = targetCellsPerRow;
     img_info->frame_count = framecount;
+    img_info->shift_x = grpNegativeWidthExtra;
+    img_info->shift_y = grpNegativeHeightExtra;
   }
 }
 
@@ -110,7 +119,7 @@ void img_to_gfx_turns_sheet(dds_img_t& img, gfx_info_t* info) {
   int new_line_len = std::min(info->line_length, num_frames_without_turns);
   // Factorio bug where smaller-width textures on characters will fail to load because it tries to load mysterious 2x4-sized sprites
   int new_width = std::max(new_line_len * info->frame_width, 2048);
-  int new_height = (num_rows_per_turn * 34 + num_extra_rows) * info->frame_height;
+  int new_height = (num_rows_per_turn * 32 + num_extra_rows) * info->frame_height;
   std::vector<std::uint8_t> new_img(new_width * new_height * 4);
 
   // Copy normal frames
@@ -125,26 +134,26 @@ void img_to_gfx_turns_sheet(dds_img_t& img, gfx_info_t* info) {
       bitBlit32(img.data, srcx, srcy, info->frame_width, info->frame_height, img.width * 4, new_img, dstx, dsty, new_width * 4);
     }
     // Flip frame
-    for (int turn = 0; turn < 17; ++turn) {
+    for (int turn = 1; turn < 16; ++turn) {
       int srcx = ((i * 17 + turn) % info->line_length) * info->frame_width;
       int srcy = ((i * 17 + turn) / info->line_length) * info->frame_height;
 
       int dstx = (i % new_line_len) * info->frame_width;
-      int dsty = ((34 - 1 - turn) * num_rows_per_turn + i / new_line_len) * info->frame_height;
+      int dsty = ((32 - turn) * num_rows_per_turn + i / new_line_len) * info->frame_height;
 
       bitBlit32_flipped(img.data, srcx, srcy, info->frame_width, info->frame_height, img.width * 4, new_img, dstx, dsty, new_width * 4);
     }
   }
 
   // Copy extra frames
-  int extra_frames_start = num_frames_without_turns * 34;
+  int extra_frames_start = num_frames_without_turns * 17;
   for (int i = extra_frames_start; i < info->frame_count; ++i) {
     int srcx = (i % info->line_length) * info->frame_width;
     int srcy = (i / info->line_length) * info->frame_height;
 
     int base_offset = i % extra_frames_start;
     int dstx = (base_offset % new_line_len) * info->frame_width;
-    int dsty = (num_rows_per_turn * 17 + base_offset / new_line_len) * info->frame_height;
+    int dsty = (num_rows_per_turn * 32 + base_offset / new_line_len) * info->frame_height;
 
     bitBlit32(img.data, srcx, srcy, info->frame_width, info->frame_height, img.width * 4, new_img, dstx, dsty, new_width * 4);
   }
@@ -205,6 +214,9 @@ std::vector<std::string> get_layer_strings(const std::string& graphic_file, cons
     "scale = 0.5"
   };
 
+  if (info.shift_x != 0 || info.shift_y != 0)
+    result.push_back("shift = {" + std::to_string(info.shift_x) + "/16, " + std::to_string(info.shift_y) + "/16}");
+
   if (image_predefs[info.img_id].draw_as_glow)
     result.emplace_back("draw_as_glow = true");
 
@@ -213,7 +225,7 @@ std::vector<std::string> get_layer_strings(const std::string& graphic_file, cons
 
   if (image_predefs[info.img_id].gfx_turns) {
     result.push_back("frame_count = " + std::to_string(info.frame_count / 17));
-    result.emplace_back("direction_count = 34");
+    result.emplace_back("direction_count = 32");
     result.emplace_back("animation_speed = 1 / 2.52");
   }
   else {
@@ -251,13 +263,13 @@ void convert(const std::string& input, const std::string& output_dir) {
   write_png(out_file_prefix + "_diffuse.png", anim_data, "diffuse");
 
   if (has_teamcolor) {
-    convert_img(anim_data, "teamcolor", gfxturns);
+    convert_img(anim_data, "teamcolor", gfxturns, &result_info);
     apply_mask(anim_data.data.at("diffuse"), anim_data.data.at("teamcolor"));
     write_png(out_file_prefix + "_teamcolor.png", anim_data, "teamcolor");
   }
 
   if (has_light) {
-    convert_img(anim_data, "emissive", gfxturns);
+    convert_img(anim_data, "emissive", gfxturns, &result_info);
     write_png(out_file_prefix + "_emissive.png", anim_data, "emissive");
   }
 

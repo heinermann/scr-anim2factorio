@@ -346,15 +346,15 @@ std::array<imagedat_info_t, 999> image_predefs = {
   { false, true, true }, // Rhynadon (Badlands) Shadow
   { false, false, true }, // Bengalaas (Jungle)
   { false, true, true }, // Bengalaas (Jungle) Shadow
-  { false, false, false }, // Vespene Geyser
-  { false, false, false }, // Vespene Geyser2
-  { false, true, false }, // Vespene Geyser Shadow
-  { false, false, false }, // Mineral Field Type1
-  { false, true, false }, // Mineral Field Type1 Shadow
-  { false, false, false }, // Mineral Field Type2
-  { false, true, false }, // Mineral Field Type2 Shadow
-  { false, false, false }, // Mineral Field Type3
-  { false, true, false }, // Mineral Field Type3 Shadow
+  { false, false, false, true }, // Vespene Geyser
+  { false, false, false, true }, // Vespene Geyser2
+  { false, true, false, true }, // Vespene Geyser Shadow
+  { false, false, false, true }, // Mineral Field Type1
+  { false, true, false, true }, // Mineral Field Type1 Shadow
+  { false, false, false, true }, // Mineral Field Type2
+  { false, true, false, true }, // Mineral Field Type2 Shadow
+  { false, false, false, true }, // Mineral Field Type3
+  { false, true, false, true }, // Mineral Field Type3 Shadow
   {}, // Independent Starport (Unused)
   { false, false, false }, // Zerg Beacon
   { true, false, false }, // Zerg Beacon Overlay
